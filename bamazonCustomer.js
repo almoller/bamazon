@@ -1,5 +1,12 @@
+require("dotenv").config();
+
+var keys = require("./keys.js");
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+
+//get SQL Password from .env file
+//store SQL Password in a variable
+var sql_PW = keys.mySQL_DB.SQL_key
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -7,13 +14,12 @@ var connection = mysql.createConnection({
 
     user: "root",
 
-    password: "Precip@22A",
+    password: sql_PW,
     database: "bamazon_DB"
 });
 
 connection.connect(function (err) {
     if (err) throw err;
-    //call a function to run etc.
     runBamazon();
 });
 
@@ -75,25 +81,47 @@ function runBamazon() {
                     } 
                                     
                     else {
-                        console.log("You're in Luck! We still have " + res[0].stock_quantity + " in stock.\n");
-                        console.log("Your Total purchase comes to: $" + (answer.quantity * res[0].price).toFixed(2));
+                        console.log("You're in Luck! We still have " + res[0].stock_quantity + " in stock.");
                         console.log("-------------------------\n");
 
-                        var query = "UPDATE products SET ? WHERE ?";
-                        var new_Qty = res[0].stock_quantity - answer.quantity;
-                        connection.query(query, 
-                            [
-                              { 
-                                stock_quantity: new_Qty 
-                              }, 
-                              { 
-                                item_ID: answer.ID
-                              }
-                            ], 
-                            function(err, res) {
-                            });
+                        inquirer
+                            .prompt(
+                                {
+                                    name: "confirm",
+                                    type: "confirm",
+                                    message: "Would you like to continue with purchase?",
+                                    default: true
+                                })
+                            .then(function (answer2) {
+                                if (answer2.confirm) {
+                                    console.log("\nTHANK YOU");
+                                    console.log("-------------------------");
+                                    console.log("Your Total purchase comes to: $" + (answer.quantity * res[0].price).toFixed(2));
+                                    console.log("-------------------------\n");
+
+                                    var query = "UPDATE products SET ? WHERE ?";
+                                    var new_Qty = res[0].stock_quantity - answer.quantity;
+                                    connection.query(query, 
+                                        [
+                                        { 
+                                            stock_quantity: new_Qty 
+                                        }, 
+                                        { 
+                                            item_ID: answer.ID
+                                        }
+                                        ], 
+                                        function(err, res) {
+                                        });
                         
-                        return shopMore();
+                                    return shopMore();
+                                }
+                                else {
+                                    console.log("---");
+                                    return shopMore();
+                                }
+                            });
+
+                        
                     }
                 });
             });
