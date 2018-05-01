@@ -59,23 +59,39 @@ function runBamazon() {
                 var query = "SELECT product_name, price, stock_quantity FROM products WHERE ?";
                 connection.query(query, { item_ID: answer.ID }, function (err, res) {
                     console.log("\n-------------------------");
-                    console.log("You are requesting " + answer.quantity + " " + res[0].product_name + "(s).");
+                    console.log("You are requesting " + answer.quantity + " " + res[0].product_name + "(s) "
+                                + "for $" + res[0].price + "/ea");
 
-                    if (answer.quantity > res[0].stock_quantity) {
-                        console.log("Sorry. Not enough in stock to fulfill order.");
+                    if (res[0].stock_quantity === 0) {
+                        console.log("Sorry. Item Currently Out of Stock.");
                         console.log("-------------------------\n");
                         return shopMore();
                     }
+
+                    else if (answer.quantity > res[0].stock_quantity) {
+                        console.log("Sorry. Not enough in stock to fulfill order.");
+                        console.log("-------------------------\n");
+                        return shopMore();
+                    } 
+                                    
                     else {
-                        console.log("You're in Luck! We currently have " + res[0].stock_quantity + " in stock.\n");
-                        console.log("Your Total purchase comes to: $" + (answer.quantity * res[0].price));
+                        console.log("You're in Luck! We still have " + res[0].stock_quantity + " in stock.\n");
+                        console.log("Your Total purchase comes to: $" + (answer.quantity * res[0].price).toFixed(2));
                         console.log("-------------------------\n");
 
                         var query = "UPDATE products SET ? WHERE ?";
-                        //var qty = res[0].stock_quantity;
-                        connection.query(query, [{ stock_quantity: (res[0].stock_quantity - answer.quantity) },{ item_ID: answer.ID }], function(err, res) {
-                        console.log("Can You See Me?");
-                        });
+                        var new_Qty = res[0].stock_quantity - answer.quantity;
+                        connection.query(query, 
+                            [
+                              { 
+                                stock_quantity: new_Qty 
+                              }, 
+                              { 
+                                item_ID: answer.ID
+                              }
+                            ], 
+                            function(err, res) {
+                            });
                         
                         return shopMore();
                     }
@@ -85,14 +101,6 @@ function runBamazon() {
 
 };
 
-
-// function updateProducts() {
-//     var query = "UPDATE products SET ?";
-//     //var qty = res[0].stock_quantity;
-//     connection.query(query, { stock_quantity: stock_quantity - answer.quantity }, function (err, res) {
-//         console.log("now there are " + res[0].stock_quantity + " in stock.");
-//     })
-// };
 
 function shopMore() {
     inquirer
@@ -108,7 +116,7 @@ function shopMore() {
                 runBamazon();
             }
             else {
-                console.log("\nThanks! Come again!");
+                console.log("\nThanks! Come again!\n");
                 connection.end();
             }
         });
